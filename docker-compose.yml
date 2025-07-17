@@ -1,0 +1,68 @@
+services:
+  ghidra:
+    build:
+      context: ./ghidra-headless
+    volumes:
+      - ./data:/data
+      - ./ghidra-headless/scripts:/scripts
+    networks:
+      - backend
+
+  retdec:
+    image: remnux/retdec
+    volumes:
+      - ./data:/data
+
+  embedder:
+    image: ghcr.io/huggingface/text-embeddings-inference:latest
+    container_name: embedder
+    environment:
+      - MODEL_ID=intfloat/e5-large-v2
+    env_file:
+      - .env
+    ports:
+      - "8081:80"
+    networks:
+      - backend
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  vectordb:
+    image: qdrant/qdrant
+    container_name: vectordb
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    networks:
+      - backend
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            capabilities: ["gpu"]
+            count: all
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    entrypoint: ["ollama", "serve"]
+    networks:
+      - backend
+
+networks:
+  backend:
+
+volumes:
+  ollama:
+  qdrant-data:
