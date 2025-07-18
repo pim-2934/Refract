@@ -42,32 +42,31 @@ public class VectorDbService
                     },
                     payload = new
                     {
-                        name = chunk.Name,
-                        address = chunk.Address,
-                        context = chunk.Context
+                        chunk.Id,
+                        chunk.Content,
+                        chunk.Metadata
                     }
                 }
             }
         };
 
         var response = await _httpClient.PutAsJsonAsync(qdrantUrl, payload);
-        var foo = await response.Content.ReadAsStringAsync();
         response.EnsureSuccessStatusCode();
     }
 
     public async Task ProcessChunksAsync(List<Chunk> chunks, string chunksFolder, string? sessionName)
     {
         await _httpClient.PutAsJsonAsync($"{_vectorDbUrl}/collections/{sessionName}", new
-        {
-            vectors = new Dictionary<string, object>
             {
-                ["text"] = new
+                vectors = new Dictionary<string, object>
                 {
-                    size = 1024,
-                    distance = "Cosine"
+                    ["text"] = new
+                    {
+                        size = 1024,
+                        distance = "Cosine"
+                    }
                 }
             }
-        }
         );
 
         foreach (var chunk in chunks)

@@ -1,3 +1,4 @@
+using Refract.CLI.Data;
 using Refract.CLI.Services;
 using Refract.CLI.Utilities;
 using Terminal.Gui.App;
@@ -10,6 +11,7 @@ namespace Refract.CLI.Views;
 
 public sealed class MainView : Toplevel
 {
+    private readonly IChunker _chunker;
     private readonly DecompileService _decompileService;
     private readonly EmbeddingService _embeddingService;
     private readonly VectorDbService _vectorDbService;
@@ -20,16 +22,17 @@ public sealed class MainView : Toplevel
     private readonly StatusBar _statusBar = new();
 
     public MainView(
+        IChunker chunker,
         DecompileService decompileService,
         RagService ragService,
         EmbeddingService embeddingService,
         VectorDbService vectorDbService)
     {
+        _chunker = chunker;
         _decompileService = decompileService;
         _embeddingService = embeddingService;
         _vectorDbService = vectorDbService;
 
-        // Setup toplevel properties
         Width = Dim.Fill();
         Height = Dim.Fill();
         X = 0;
@@ -86,7 +89,7 @@ public sealed class MainView : Toplevel
                 return;
             }
 
-            var chunks = ChunkService.LoadChunksFromDirectory(ApplicationContext.ChunkFolderPath);
+            var chunks = _chunker.LoadChunksFromDirectory(ApplicationContext.ChunkFolderPath);
 
             await _vectorDbService.ProcessChunksAsync(
                 chunks,
@@ -111,9 +114,9 @@ public sealed class MainView : Toplevel
                 return;
             }
 
-            var chunks = ChunkService.LoadChunksFromDirectory(ApplicationContext.ChunkFolderPath);
+            var chunks = _chunker.LoadChunksFromDirectory(ApplicationContext.ChunkFolderPath);
             chunks = await _embeddingService.EmbedChunksAsync(chunks);
-            ChunkService.SaveChunks(chunks, ApplicationContext.ChunkFolderPath);
+            _chunker.SaveChunks(chunks, ApplicationContext.ChunkFolderPath);
 
             MessageDialog.Show("Success", "All chunks embedded successfully");
         }
@@ -123,17 +126,21 @@ public sealed class MainView : Toplevel
         }
     }
 
-    private static void ActionGenerateChunks()
+    private void ActionGenerateChunks()
     {
         if (ApplicationContext.BinaryFilePath is null)
         {
             return;
         }
 
-        var chunks = ChunkService.CreateChunksFromCFile(ApplicationContext.CFilePath, ApplicationContext.AsmFilePath);
-        ChunkService.SaveChunks(chunks, ApplicationContext.ChunkFolderPath);
+        var chunks = new List<Chunk>();
+        chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.CFilePath), "C"));
+        chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.AsmFilePath), "ASM"));
+        chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.HexFilePath), "HEX"));
 
-        MessageDialog.Show("Success", $"Created {chunks.Count} chunks from C file");
+        _chunker.SaveChunks(chunks, ApplicationContext.ChunkFolderPath);
+
+        MessageDialog.Show("Success", $"Created {chunks.Count} chunks in {ApplicationContext.ChunkFolderPath} folder.");
     }
 
     private async void ActionDecompileBinary()
@@ -165,9 +172,9 @@ public sealed class MainView : Toplevel
             );
 
             _analyzeTabView.SetHexTabContent(
-                    File.Exists(ApplicationContext.HexFilePath)
-                        ? File.OpenRead(ApplicationContext.HexFilePath)
-                        : new MemoryStream()
+                File.Exists(ApplicationContext.HexFilePath)
+                    ? File.OpenRead(ApplicationContext.HexFilePath)
+                    : new MemoryStream()
             );
 
 

@@ -1,4 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
+﻿// TODO: dockerize this app!
+
+using Microsoft.Extensions.Logging;
+using Refract.CLI;
+using Refract.CLI.Chunkers;
 using Refract.CLI.Services;
 using Refract.CLI.Views;
 using Serilog;
@@ -39,6 +43,10 @@ Application.Init();
 try
 {
     Application.Run(new MainView(
+        new OverlappingSlidingWindowChunker(
+            ApplicationContext.ChunkerTargetTokenEstimate,
+            ApplicationContext.ChunkerOverlapLines
+        ),
         new DecompileService(loggerFactory.CreateLogger<DecompileService>()),
         new RagService(vectorDbUrl, embedderUrl, loggerFactory.CreateLogger<RagService>()),
         new EmbeddingService(embedderUrl, loggerFactory.CreateLogger<EmbeddingService>()),
