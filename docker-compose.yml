@@ -1,17 +1,9 @@
 services:
-  ghidra:
-    build:
-      context: ./ghidra-headless
-    volumes:
-      - ./data:/data
-      - ./ghidra-headless/scripts:/scripts
-    networks:
-      - backend
 
   retdec:
     image: remnux/retdec
     volumes:
-      - ./data:/data
+      - ./sessions:/sessions
 
   embedder:
     image: ghcr.io/huggingface/text-embeddings-inference:latest
