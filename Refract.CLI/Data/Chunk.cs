@@ -1,10 +1,10 @@
-﻿namespace Refract.CLI;
+﻿namespace Refract.CLI.Data;
 
 public class Chunk
 {
-    public string id { get; set; }
-    public string name { get; set; }
-    public string address { get; set; }
-    public string context { get; set; }
-    public float[] embedding { get; set; }
+    public required string Id { get; set; }
+    public required string Name { get; set; }
+    public required string Address { get; set; }
+    public required string Context { get; set; }
+    public float[] Embedding { get; set; } = [];
 }

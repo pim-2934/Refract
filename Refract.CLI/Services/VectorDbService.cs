@@ -1,34 +1,33 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Refract.CLI.Data;
 
-namespace Refract.CLI;
+namespace Refract.CLI.Services;
 
 public class VectorDbService
 {
-    private readonly string _collectionName = "refract"; // You can make this configurable if needed
     private readonly string _vectorDbUrl;
     private readonly HttpClient _httpClient;
-    private readonly string _chunkOutputPath;
 
-    public VectorDbService(string vectorDbUrl, string chunkOutputPath, HttpClient httpClient = null)
+    public VectorDbService(string vectorDbUrl, ILogger<VectorDbService> logger)
     {
         _vectorDbUrl = vectorDbUrl.TrimEnd('/');
-        _chunkOutputPath = chunkOutputPath;
-        _httpClient = httpClient ?? new HttpClient();
-
-        Directory.CreateDirectory(_chunkOutputPath);
+        _httpClient = new HttpClient();
     }
 
-    public async Task SaveChunkLocallyAsync(Chunk chunk)
+    public async Task SaveChunkLocallyAsync(Chunk chunk, string chunksFolder)
     {
-        var chunkPath = Path.Combine(_chunkOutputPath, $"{chunk.id}.json");
+        Directory.CreateDirectory(chunksFolder);
+
+        var chunkPath = Path.Combine(chunksFolder, $"{chunk.Id}.json");
         await File.WriteAllTextAsync(chunkPath,
             JsonSerializer.Serialize(chunk, new JsonSerializerOptions { WriteIndented = true }));
     }
 
-    public async Task UploadToVectorDbAsync(Chunk chunk)
+    public async Task UploadToVectorDbAsync(Chunk chunk, string? sessionName)
     {
-        var qdrantUrl = $"{_vectorDbUrl}/collections/{_collectionName}/points";
+        var qdrantUrl = $"{_vectorDbUrl}/collections/{sessionName}/points";
 
         var payload = new
         {
@@ -36,16 +35,16 @@ public class VectorDbService
             {
                 new
                 {
-                    id = chunk.id,
+                    id = chunk.Id,
                     vector = new Dictionary<string, float[]>
                     {
-                        { "text", chunk.embedding }
+                        { "text", chunk.Embedding }
                     },
                     payload = new
                     {
-                        name = chunk.name,
-                        address = chunk.address,
-                        context = chunk.context
+                        name = chunk.Name,
+                        address = chunk.Address,
+                        context = chunk.Context
                     }
                 }
             }
@@ -56,10 +55,9 @@ public class VectorDbService
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task ProcessChunksAsync(List<Chunk> chunks)
+    public async Task ProcessChunksAsync(List<Chunk> chunks, string chunksFolder, string? sessionName)
     {
-        var response = await _httpClient.PutAsJsonAsync($"{_vectorDbUrl}/collections/{_collectionName}", new
-
+        await _httpClient.PutAsJsonAsync($"{_vectorDbUrl}/collections/{sessionName}", new
         {
             vectors = new Dictionary<string, object>
             {
@@ -74,8 +72,8 @@ public class VectorDbService
 
         foreach (var chunk in chunks)
         {
-            await SaveChunkLocallyAsync(chunk);
-            await UploadToVectorDbAsync(chunk);
+            await SaveChunkLocallyAsync(chunk, chunksFolder);
+            await UploadToVectorDbAsync(chunk, sessionName);
         }
     }
 }

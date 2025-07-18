@@ -1,7 +1,7 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
 
-namespace Refract.CLI;
+namespace Refract.CLI.Services;
 
 public class OllamaService(string ollamaUrl = "http://localhost:11434/api/generate")
 {

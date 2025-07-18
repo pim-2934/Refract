@@ -1,24 +1,20 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using Refract.CLI.Data;
 
-namespace Refract.CLI;
+namespace Refract.CLI.Services;
 
-public class EmbeddingService
+public class EmbeddingService(string embedderUrl, ILogger<EmbeddingService> logger)
 {
-    private readonly string _embedderUrl;
-    private readonly HttpClient _httpClient;
-
-    public EmbeddingService(string embedderUrl, HttpClient httpClient = null)
-    {
-        _embedderUrl = embedderUrl;
-        _httpClient = httpClient ?? new HttpClient();
-    }
+    private readonly HttpClient _httpClient = new();
+    private ILogger<EmbeddingService> _logger = logger;
 
     public async Task EmbedChunkAsync(Chunk chunk)
     {
         var embedResp = await _httpClient.PostAsJsonAsync(
-            _embedderUrl,
-            new { inputs = new[] { $"passage: {chunk.context}" } }
+            embedderUrl,
+            new { inputs = new[] { $"passage: {chunk.Context}" } }
         );
 
         // Check if the response is successful
@@ -31,7 +27,7 @@ public class EmbeddingService
         {
             // Success case: Response is an array of embeddings
             var embedding = embedData[0].EnumerateArray().Select(x => x.GetSingle()).ToArray();
-            chunk.embedding = embedding;
+            chunk.Embedding = embedding;
             return;
         }
 
@@ -41,7 +37,8 @@ public class EmbeddingService
             if (embedData.TryGetProperty("error", out var errorMsg) &&
                 embedData.TryGetProperty("error_type", out var errorType))
             {
-                Console.WriteLine($"Embedding service error: {errorType.GetString()} - {errorMsg.GetString()}");
+                _logger.LogError("Embedding service error: {GetString} - {S}", errorType.GetString(),
+                    errorMsg.GetString());
                 return;
             }
 
