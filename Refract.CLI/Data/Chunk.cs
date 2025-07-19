@@ -2,9 +2,8 @@
 
 public class Chunk
 {
-    public required string Id { get; set; }
-    public required string Name { get; set; }
-    public required string Address { get; set; }
-    public required string Context { get; set; }
+    public required string Id { get; init; }
+    public required string Context { get; init; }
+    public required Metadata Metadata { get; init; }
     public float[] Embedding { get; set; } = [];
 }

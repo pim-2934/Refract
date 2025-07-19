@@ -21,18 +21,24 @@ public sealed class AskFrameView : FrameView
         _askField.WordWrap = true;
         _askField.Accepting += async (_, args) =>
         {
-            args.Handled = true;
+            try
+            {
+                args.Handled = true;
 
-            if (ApplicationContext.SessionName is null)
-                return;
+                if (ApplicationContext.SessionName is null)
+                    return;
 
-            var query = _askField.Text;
-            _askField.Text = "";
+                var query = _askField.Text;
+                _askField.Text = "";
 
-            var response = await ragService.AskAsync(query, ApplicationContext.SessionName);
+                var response = await ragService.AskAsync(query, ApplicationContext.SessionName);
 
-
-            outputFrameView.AppendOutput(response);
+                outputFrameView.AppendOutput(response);
+            }
+            catch (Exception e)
+            {
+                MessageDialog.Show("Exception occured!", e.Message);                
+            }
         };
 
         Add(_askField);

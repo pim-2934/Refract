@@ -3,3 +3,5 @@
 data
 sessions
 logs
+models/*
+!models/Modelfile*

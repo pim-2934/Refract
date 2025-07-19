@@ -17,16 +17,31 @@ Whether you're looking for a flag in a CTF binary or trying to understand obscur
 
 ## 🔰 Getting Started
 ### Installation
-Run the backend and install required models.
+Download one of the nomic-embed-code GGUF files for embedding and add it to the models folder:
 ```
-docker compose up -d
+https://huggingface.co/nomic-ai/nomic-embed-code-GGUF/blob/main/README.md
+```
+Build the model, replace `[version]` with the downloaded version. We prepared a couple Modefile's, if yours is missing, add it:
+```
+docker exec -it ollama ollama create nomic-embed-code -f /root/.ollama/models/Modelfile.[version]
+```
+Also pull the mistral model for our LLM queries:
+```
 docker exec -it ollama ollama pull mistral
 ```
-### Execution
+Veify available models:
 ```
-Refract.CLI decompile <target> <data>
-Refract.CLI analyze <data>
-Refract.CLI ask <target> <question>
+docker exec -it ollama ollama list
+```
+
+### Execution
+Run the backend:
+```
+docker compose up -d
+```
+Run the CLI:
+```
+docker compose run --rm refractcli dotnet run Refract.CLI 
 ```
 
 ## 🚀 Example

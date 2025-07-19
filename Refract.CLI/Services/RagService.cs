@@ -6,19 +6,26 @@ namespace Refract.CLI.Services;
 public class RagService(string vectorDbUrl, string embedderUrl, ILogger<RagService> logger)
 {
     private readonly HttpClient _httpClient = new();
-    private readonly OllamaService _ollamaService = new("http://localhost:11434/api/generate");
+    private readonly OllamaService _ollamaService = new();
 
     public async Task<string> AskAsync(string question, string? sessionName)
     {
         var embedResp = await _httpClient.PostAsJsonAsync(
-            $"{embedderUrl}",
-            new { inputs = new[] { $"query: {question}" } }
+            embedderUrl,
+            new
+            {
+                model = "nomic-embed-code",
+                prompt = question
+            }
         );
-
+        
         embedResp.EnsureSuccessStatusCode();
 
-        var embedData = await embedResp.Content.ReadFromJsonAsync<List<List<float>>>();
-        var queryVector = embedData[0];
+        var embedData = await embedResp.Content.ReadFromJsonAsync<EmbeddingService.EmbeddingResponse>();
+        if (embedData is null)
+            throw new Exception("Question cannot be translated to embeddings.");
+            
+        var queryVector = embedData.Embedding;
 
         var qdrantReq = new
         {
@@ -26,7 +33,7 @@ public class RagService(string vectorDbUrl, string embedderUrl, ILogger<RagServi
             {
                 { "text", queryVector.ToArray() }
             },
-            limit = 20,
+            limit = 100,
             with_payload = true
         };
 
@@ -38,6 +45,9 @@ public class RagService(string vectorDbUrl, string embedderUrl, ILogger<RagServi
         queryResp.EnsureSuccessStatusCode();
         var res = await queryResp.Content.ReadFromJsonAsync<QdrantQueryResponse>();
 
+        if (res is null)
+            throw new Exception("No relevant context found in the database.");
+        
         foreach (var point in res.result.points)
         {
             logger.LogDebug("Retrieved chunk: {PayloadName} @ {PayloadAddress}",
