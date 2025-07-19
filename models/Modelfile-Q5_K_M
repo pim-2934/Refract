@@ -1,0 +1,2 @@
+FROM ./nomic-embed-code.Q5_K_M.gguf
+TEMPLATE "{{ .Prompt }}"

@@ -8,7 +8,8 @@ using Refract.CLI.Views;
 using Serilog;
 using Terminal.Gui.App;
 
-const string embedderUrl = "http://localhost:8081/embed";
+// TODO: this is not the right place
+const string embedderUrl = "http://localhost:11434/api/embeddings";
 const string vectorDbUrl = "http://localhost:6333";
 
 Directory.CreateDirectory("logs");

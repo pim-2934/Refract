@@ -35,7 +35,7 @@ public interface IChunker
         }
     }
 
-    public List<Chunk> LoadChunksFromDirectory(string directoryPath)
+    public List<Chunk> LoadChunks(string directoryPath)
     {
         if (!Directory.Exists(directoryPath))
         {

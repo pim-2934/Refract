@@ -89,7 +89,7 @@ public sealed class MainView : Toplevel
                 return;
             }
 
-            var chunks = _chunker.LoadChunksFromDirectory(ApplicationContext.ChunkFolderPath);
+            var chunks = _chunker.LoadChunks(ApplicationContext.ChunkFolderPath);
 
             await _vectorDbService.ProcessChunksAsync(
                 chunks,
@@ -114,7 +114,7 @@ public sealed class MainView : Toplevel
                 return;
             }
 
-            var chunks = _chunker.LoadChunksFromDirectory(ApplicationContext.ChunkFolderPath);
+            var chunks = _chunker.LoadChunks(ApplicationContext.ChunkFolderPath);
             chunks = await _embeddingService.EmbedChunksAsync(chunks);
             _chunker.SaveChunks(chunks, ApplicationContext.ChunkFolderPath);
 
@@ -135,8 +135,10 @@ public sealed class MainView : Toplevel
 
         var chunks = new List<Chunk>();
         chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.CFilePath), "C"));
-        chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.AsmFilePath), "ASM"));
-        chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.HexFilePath), "HEX"));
+        
+        // TODO: Adding ASM and HEX chunks seem to make the AI hallucinate and deprioritize the C code to much..
+        // chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.AsmFilePath), "ASM"));
+        // chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.HexFilePath), "HEX"));
 
         _chunker.SaveChunks(chunks, ApplicationContext.ChunkFolderPath);
 
@@ -219,7 +221,6 @@ public sealed class MainView : Toplevel
                 if (!Directory.Exists(ApplicationContext.ProjectFolderPath))
                     Directory.CreateDirectory(ApplicationContext.ProjectFolderPath);
 
-                // Copy target file into project folder
                 ApplicationContext.BinaryFilePath =
                     Path.Combine(ApplicationContext.ProjectFolderPath, Path.GetFileName(path));
                 File.Copy(path, ApplicationContext.BinaryFilePath, true);

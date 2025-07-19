@@ -40,7 +40,12 @@ public class OverlappingSlidingWindowChunker(int targetTokenEstimate, int overla
             chunks.Add(new Chunk
             {
                 Id = uid,
-                Content = chunkText,
+                Context = $"""
+                           Type: {dataType}
+
+                           [{dataType}]
+                           {chunkText}
+                           """,
                 Metadata = new Metadata
                 {
                     ChunkIndex = i,

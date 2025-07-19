@@ -11,17 +11,21 @@ public class RagService(string vectorDbUrl, string embedderUrl, ILogger<RagServi
     public async Task<string> AskAsync(string question, string? sessionName)
     {
         var embedResp = await _httpClient.PostAsJsonAsync(
-            $"{embedderUrl}",
-            new { inputs = new[] { $"query: {question}" } }
+            embedderUrl,
+            new
+            {
+                model = "nomic-embed-code",
+                prompt = question
+            }
         );
-
+        
         embedResp.EnsureSuccessStatusCode();
 
-        var embedData = await embedResp.Content.ReadFromJsonAsync<List<List<float>>>();
+        var embedData = await embedResp.Content.ReadFromJsonAsync<EmbeddingService.EmbeddingResponse>();
         if (embedData is null)
             throw new Exception("Question cannot be translated to embeddings.");
             
-        var queryVector = embedData[0];
+        var queryVector = embedData.Embedding;
 
         var qdrantReq = new
         {
@@ -29,7 +33,7 @@ public class RagService(string vectorDbUrl, string embedderUrl, ILogger<RagServi
             {
                 { "text", queryVector.ToArray() }
             },
-            limit = 20,
+            limit = 100,
             with_payload = true
         };
 

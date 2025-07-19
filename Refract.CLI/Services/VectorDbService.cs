@@ -43,7 +43,7 @@ public class VectorDbService
                     payload = new
                     {
                         chunk.Id,
-                        chunk.Content,
+                        chunk.Context,
                         chunk.Metadata
                     }
                 }
@@ -62,7 +62,7 @@ public class VectorDbService
                 {
                     ["text"] = new
                     {
-                        size = 1024,
+                        size = 3584,
                         distance = "Cosine"
                     }
                 }
