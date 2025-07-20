@@ -5,7 +5,7 @@ namespace Refract.CLI;
 
 public interface IChunker
 {
-    public List<Chunk> CreateChunks(string data, string dataType);
+    public List<Chunk> CreateChunks(string data, string contentType);
 
     public void SaveChunks(List<Chunk> chunks, string directoryPath)
     {

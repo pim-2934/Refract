@@ -1,9 +1,10 @@
 ﻿using System.Net.Http.Json;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 
 namespace Refract.CLI.Services;
 
-public class RagService(string vectorDbUrl, string embedderUrl, ILogger<RagService> logger)
+public partial class RagService(string vectorDbUrl, string embedderUrl, ILogger<RagService> logger)
 {
     private readonly HttpClient _httpClient = new();
     private readonly OllamaService _ollamaService = new();
@@ -18,13 +19,13 @@ public class RagService(string vectorDbUrl, string embedderUrl, ILogger<RagServi
                 prompt = question
             }
         );
-        
+
         embedResp.EnsureSuccessStatusCode();
 
         var embedData = await embedResp.Content.ReadFromJsonAsync<EmbeddingService.EmbeddingResponse>();
         if (embedData is null)
             throw new Exception("Question cannot be translated to embeddings.");
-            
+
         var queryVector = embedData.Embedding;
 
         var qdrantReq = new
@@ -34,7 +35,8 @@ public class RagService(string vectorDbUrl, string embedderUrl, ILogger<RagServi
                 { "text", queryVector.ToArray() }
             },
             limit = 100,
-            with_payload = true
+            with_payload = true,
+            filter = BuildFilter
         };
 
         var queryResp = await _httpClient.PostAsJsonAsync(
@@ -47,7 +49,7 @@ public class RagService(string vectorDbUrl, string embedderUrl, ILogger<RagServi
 
         if (res is null)
             throw new Exception("No relevant context found in the database.");
-        
+
         foreach (var point in res.result.points)
         {
             logger.LogDebug("Retrieved chunk: {PayloadName} @ {PayloadAddress}",
@@ -65,6 +67,56 @@ public class RagService(string vectorDbUrl, string embedderUrl, ILogger<RagServi
             throw new Exception("No relevant context found in the database.");
 
         return await _ollamaService.AskAsync(question, string.Join("\n", contexts));
+    }
+
+    private List<Filter> BuildFilter(string question)
+    {
+        var contentTypes = new List<string> { "C" };
+
+        var lowerQuestion = question.ToLowerInvariant();
+
+        if (AssemblyCodeRequestedRegex().IsMatch(lowerQuestion))
+            contentTypes.Add("ASM");
+
+        if (HexDataRequestedRegex().IsMatch(lowerQuestion))
+            contentTypes.Add("HEX");
+
+        return
+        [
+            new Filter
+            {
+                Must =
+                [
+                    new Condition
+                    {
+                        Key = "ContentType",
+                        MatchAny = new MatchAny { Values = contentTypes }
+                    }
+                ]
+            }
+        ];
+    }
+
+    [GeneratedRegex(@"\b(hex|bytes|raw data|memory dump)\b")]
+    private static partial Regex HexDataRequestedRegex();
+    
+    [GeneratedRegex(@"\b(asm|assembly|disassembly|opcode|instruction)\b")]
+    private static partial Regex AssemblyCodeRequestedRegex();
+    
+    private class Filter
+    {
+        public List<Condition> Must { get; set; }
+    }
+
+    private class Condition
+    {
+        public required string Key { get; set; }
+        public required MatchAny MatchAny { get; set; }
+    }
+
+    private class MatchAny
+    {
+        public required List<string> Values { get; set; }
     }
 
     private class QdrantQueryResponse

@@ -1,13 +1,13 @@
 services:
 
-  retdec:
+  disassembler:
     image: remnux/retdec
     volumes:
       - ./sessions:/sessions
 
-  vectordb:
+  vector-db:
     image: qdrant/qdrant
-    container_name: vectordb
+    container_name: vector-db
     ports:
       - "6333:6333"
     volumes:
@@ -15,9 +15,9 @@ services:
     networks:
       - backend
 
-  ollama:
+  embedder:
     image: ollama/ollama
-    container_name: ollama
+    container_name: embedder
     deploy:
       resources:
         reservations:
@@ -28,6 +28,26 @@ services:
     runtime: nvidia
     ports:
       - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+      - ./models:/root/.ollama/models
+    entrypoint: ["ollama", "serve"]
+    networks:
+      - backend
+
+  llm-server:
+    image: ollama/ollama
+    container_name: llm-server
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            capabilities: ["gpu"]
+            count: all
+    runtime: nvidia
+    ports:
+      - "11435:11434"
     volumes:
       - ollama:/root/.ollama
       - ./models:/root/.ollama/models

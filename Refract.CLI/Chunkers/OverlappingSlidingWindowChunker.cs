@@ -6,7 +6,7 @@ namespace Refract.CLI.Chunkers;
 
 public class OverlappingSlidingWindowChunker(int targetTokenEstimate, int overlapLines) : IChunker
 {
-    public List<Chunk> CreateChunks(string data, string dataType)
+    public List<Chunk> CreateChunks(string data, string contentType)
     {
         var lines = data.Split('\n');
         var chunks = new List<Chunk>();
@@ -32,7 +32,7 @@ public class OverlappingSlidingWindowChunker(int targetTokenEstimate, int overla
             }
 
             var uid = BitConverter
-                .ToString(MD5.HashData(Encoding.UTF8.GetBytes($"{dataType}_{i}")))
+                .ToString(MD5.HashData(Encoding.UTF8.GetBytes($"{contentType}_{i}")))
                 .Replace("-", "")
                 .ToLower();
 
@@ -40,18 +40,13 @@ public class OverlappingSlidingWindowChunker(int targetTokenEstimate, int overla
             chunks.Add(new Chunk
             {
                 Id = uid,
-                Context = $"""
-                           Type: {dataType}
-
-                           [{dataType}]
-                           {chunkText}
-                           """,
+                ContentType = contentType,
+                Context = chunkText,
                 Metadata = new Metadata
                 {
                     ChunkIndex = i,
                     StartLine = i,
-                    EndLine = j - 1,
-                    Type = dataType
+                    EndLine = j - 1
                 }
             });
 
