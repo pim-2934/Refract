@@ -12,7 +12,7 @@ public class DecompileService(ILogger<DecompileService> logger)
         {
             FileName = "cmd.exe",
             Arguments =
-                $"/c docker compose run --rm retdec retdec-decompiler.py --cleanup --mode bin --backend-no-debug --backend-no-debug-comments -o /{projectPath.Replace("\\", "/")}/{fileInfo.Name}.c /{inputFilePath.Replace("\\", "/")}",
+                $"/c docker compose run --rm disassembler retdec-decompiler.py --cleanup --mode bin --backend-no-debug --backend-no-debug-comments -o /{projectPath.Replace("\\", "/")}/{fileInfo.Name}.c /{inputFilePath.Replace("\\", "/")}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,

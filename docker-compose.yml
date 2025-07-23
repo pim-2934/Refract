@@ -26,6 +26,11 @@ services:
             capabilities: ["gpu"]
             count: all
     runtime: nvidia
+    environment:
+      - OLLAMA_LLM_LIBRARY=cuda
+      - OLLAMA_LOAD_TIMEOUT=10m
+      - OLLAMA_KEEP_ALIVE=30m
+      - OLLAMA_NUM_PARALLEL=1
     ports:
       - "11434:11434"
     volumes:
@@ -46,6 +51,11 @@ services:
             capabilities: ["gpu"]
             count: all
     runtime: nvidia
+    environment:
+      - OLLAMA_LLM_LIBRARY=cuda
+      - OLLAMA_LOAD_TIMEOUT=10m
+      - OLLAMA_KEEP_ALIVE=30m
+      - OLLAMA_NUM_PARALLEL=1
     ports:
       - "11435:11434"
     volumes:

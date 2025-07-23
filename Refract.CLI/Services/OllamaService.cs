@@ -5,7 +5,8 @@ namespace Refract.CLI.Services;
 
 public class OllamaService(string ollamaUrl = "http://localhost:11435/api/generate")
 {
-    private readonly HttpClient _httpClient = new();
+    private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromMinutes(10) };
+
 
     public async Task<string> AskAsync(string question, string context)
     {

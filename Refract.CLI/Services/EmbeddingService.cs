@@ -6,7 +6,7 @@ namespace Refract.CLI.Services;
 
 public class EmbeddingService(string embedderUrl, ILogger<EmbeddingService> logger)
 {
-    private readonly HttpClient _httpClient = new();
+    private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromMinutes(10) };
     private ILogger<EmbeddingService> _logger = logger;
 
     public async Task<List<Chunk>> EmbedChunksAsync(List<Chunk> chunks)
