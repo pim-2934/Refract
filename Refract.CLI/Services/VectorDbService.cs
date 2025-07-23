@@ -36,6 +36,7 @@ public class VectorDbService
                 new
                 {
                     id = chunk.Id,
+                    
                     vector = new Dictionary<string, float[]>
                     {
                         { "text", chunk.Embedding }
@@ -43,6 +44,7 @@ public class VectorDbService
                     payload = new
                     {
                         chunk.Id,
+                        chunk.ContentType,
                         chunk.Context,
                         chunk.Metadata
                     }

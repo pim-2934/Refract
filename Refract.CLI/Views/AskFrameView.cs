@@ -37,7 +37,7 @@ public sealed class AskFrameView : FrameView
             }
             catch (Exception e)
             {
-                MessageDialog.Show("Exception occured!", e.Message);                
+                MessageDialog.Show("Exception occured!", e.Message);
             }
         };
 

@@ -135,10 +135,8 @@ public sealed class MainView : Toplevel
 
         var chunks = new List<Chunk>();
         chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.CFilePath), "C"));
-        
-        // TODO: Adding ASM and HEX chunks seem to make the AI hallucinate and deprioritize the C code to much..
-        // chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.AsmFilePath), "ASM"));
-        // chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.HexFilePath), "HEX"));
+        chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.AsmFilePath), "ASM"));
+        chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.HexFilePath), "HEX"));
 
         _chunker.SaveChunks(chunks, ApplicationContext.ChunkFolderPath);
 

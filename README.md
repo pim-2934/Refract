@@ -23,15 +23,16 @@ https://huggingface.co/nomic-ai/nomic-embed-code-GGUF/blob/main/README.md
 ```
 Build the model, replace `[version]` with the downloaded version. We prepared a couple Modefile's, if yours is missing, add it:
 ```
-docker exec -it ollama ollama create nomic-embed-code -f /root/.ollama/models/Modelfile.[version]
+docker exec -it embedder ollama create nomic-embed-code -f /root/.ollama/models/Modelfile-[version]
 ```
 Also pull the mistral model for our LLM queries:
 ```
-docker exec -it ollama ollama pull mistral
+docker exec -it llm-server ollama pull mistral
 ```
-Veify available models:
+Verify available models:
 ```
-docker exec -it ollama ollama list
+docker exec -it embedder ollama list
+docker exec -it llm-server ollama list
 ```
 
 ### Execution
@@ -41,7 +42,8 @@ docker compose up -d
 ```
 Run the CLI:
 ```
-docker compose run --rm refractcli dotnet run Refract.CLI 
+cd Refract.CLI
+dotnet run 
 ```
 
 ## 🚀 Example
