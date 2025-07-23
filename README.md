@@ -42,7 +42,8 @@ docker compose up -d
 ```
 Run the CLI:
 ```
-docker compose run --rm refractcli dotnet run Refract.CLI 
+cd Refract.CLI
+dotnet run 
 ```
 
 ## 🚀 Example
