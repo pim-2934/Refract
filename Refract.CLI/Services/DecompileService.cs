@@ -2,9 +2,9 @@
 
 namespace Refract.CLI.Services;
 
-public class DecompileService(ILogger<DecompileService> logger)
+public class DecompileService(ILogger<DecompileService> logger) // TODO: refactor into RetDecAnalyzer
 {
-    public async Task DecompileAsync(string inputFilePath, string projectPath)
+    public async Task DecompileAsync(Session session, string inputFilePath, string projectPath)
     {
         var fileInfo = new FileInfo(inputFilePath);
         using var process = new System.Diagnostics.Process();
@@ -35,14 +35,14 @@ public class DecompileService(ILogger<DecompileService> logger)
 
         logger.LogInformation("Decompilation process exited with code: {ProcessExitCode}", process.ExitCode);
 
-        SplitDsmFile();
+        SplitDsmFile(session);
     }
 
-    private void SplitDsmFile()
+    private void SplitDsmFile(Session session)
     {
-        using var reader = new StreamReader(ApplicationContext.DsmFilePath);
-        using var asmWriter = new StreamWriter(ApplicationContext.AsmFilePath);
-        using var hexWriter = new StreamWriter(ApplicationContext.HexFilePath);
+        using var reader = new StreamReader(session.DsmFilePath);
+        using var asmWriter = new StreamWriter(session.AsmFilePath);
+        using var hexWriter = new StreamWriter(session.HexFilePath);
 
         var isHex = false;
 

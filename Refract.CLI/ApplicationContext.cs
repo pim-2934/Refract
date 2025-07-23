@@ -25,14 +25,5 @@ public static class ApplicationContext
     /// </remarks>
     public static int ChunkerOverlapLines { get; set; } = 2;
 
-    public static string? SessionName { get; set; }
     public static string SessionsFolderPath => "sessions";
-    public static string? ProjectFolderPath { get; set; }
-    public static string? BinaryFilePath { get; set; }
-
-    public static string CFilePath => $"{BinaryFilePath}.c";
-    public static string DsmFilePath => $"{BinaryFilePath}.dsm";
-    public static string AsmFilePath => $"{BinaryFilePath}.asm";
-    public static string HexFilePath => $"{BinaryFilePath}.hex";
-    public static string ChunkFolderPath => $"{ProjectFolderPath}/chunks";
 }

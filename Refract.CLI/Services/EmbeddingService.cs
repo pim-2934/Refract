@@ -1,6 +1,5 @@
 ﻿using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
-using Refract.CLI.Data;
 
 namespace Refract.CLI.Services;
 

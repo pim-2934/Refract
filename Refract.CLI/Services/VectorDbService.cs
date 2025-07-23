@@ -1,7 +1,5 @@
 ﻿using System.Net.Http.Json;
-using System.Text.Json;
 using Microsoft.Extensions.Logging;
-using Refract.CLI.Data;
 
 namespace Refract.CLI.Services;
 
@@ -16,16 +14,7 @@ public class VectorDbService
         _httpClient = new HttpClient();
     }
 
-    public async Task SaveChunkLocallyAsync(Chunk chunk, string chunksFolder)
-    {
-        Directory.CreateDirectory(chunksFolder);
-
-        var chunkPath = Path.Combine(chunksFolder, $"{chunk.Id}.json");
-        await File.WriteAllTextAsync(chunkPath,
-            JsonSerializer.Serialize(chunk, new JsonSerializerOptions { WriteIndented = true }));
-    }
-
-    public async Task UploadToVectorDbAsync(Chunk chunk, string? sessionName)
+    private async Task UploadToVectorDbAsync(Chunk chunk, string? sessionName)
     {
         var qdrantUrl = $"{_vectorDbUrl}/collections/{sessionName}/points";
 
@@ -56,9 +45,9 @@ public class VectorDbService
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task ProcessChunksAsync(List<Chunk> chunks, string chunksFolder, string? sessionName)
+    public async Task ProcessChunksAsync(Session session)
     {
-        await _httpClient.PutAsJsonAsync($"{_vectorDbUrl}/collections/{sessionName}", new
+        await _httpClient.PutAsJsonAsync($"{_vectorDbUrl}/collections/{session.Key}", new
             {
                 vectors = new Dictionary<string, object>
                 {
@@ -71,10 +60,9 @@ public class VectorDbService
             }
         );
 
-        foreach (var chunk in chunks)
+        foreach (var chunk in session.Chunks)
         {
-            await SaveChunkLocallyAsync(chunk, chunksFolder);
-            await UploadToVectorDbAsync(chunk, sessionName);
+            await UploadToVectorDbAsync(chunk, session.Key);
         }
     }
 }

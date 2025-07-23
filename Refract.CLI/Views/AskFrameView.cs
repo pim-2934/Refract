@@ -4,11 +4,11 @@ using Terminal.Gui.Views;
 
 namespace Refract.CLI.Views;
 
-public sealed class AskFrameView : FrameView
+public sealed class AskFrameView() : FrameView
 {
     private readonly TextView _askField = new();
 
-    public AskFrameView(RagService ragService, OutputFrameView outputFrameView)
+    public AskFrameView(Session? session, RagService ragService, OutputFrameView outputFrameView) : this()
     {
         Title = "Ask";
         Width = Dim.Percent(100);
@@ -25,13 +25,13 @@ public sealed class AskFrameView : FrameView
             {
                 args.Handled = true;
 
-                if (ApplicationContext.SessionName is null)
+                if (session is null)
                     return;
 
                 var query = _askField.Text;
                 _askField.Text = "";
 
-                var response = await ragService.AskAsync(query, ApplicationContext.SessionName);
+                var response = await ragService.AskAsync(query, session.Key);
 
                 outputFrameView.AppendOutput(response);
             }
