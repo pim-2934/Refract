@@ -1,60 +1,24 @@
 ﻿using System.Text.Json;
-using Refract.CLI.Utilities;
 
-namespace Refract.CLI;
+namespace Refract.CLI.Entities;
 
 public class Session
 {
-    public List<Chunk> Chunks { get; } = [];
-
+    public IReadOnlyList<Chunk> Chunks { get; private set; } = [];
     public string Key { get; private set; }
-
-    public string SessionPath { get; }
     public string ChunksPath { get; }
     public string BinaryFilePath { get; }
+    public string SessionPath { get; }
 
-    public string CFilePath => $"{BinaryFilePath}.c";
-    public string DsmFilePath => $"{BinaryFilePath}.dsm";
-    public string AsmFilePath => $"{BinaryFilePath}.asm";
-    public string HexFilePath => $"{BinaryFilePath}.hex";
-
-    public static async Task<Session> InitAsync(string targetBinaryPath)
-    {
-        var fileBytes = await File.ReadAllBytesAsync(targetBinaryPath);
-        var crc32 = HashUtilities.CalculateCrc32(fileBytes);
-
-        var session = new Session(crc32.ToString("X8"));
-
-        if (!Directory.Exists(session.SessionPath))
-            Directory.CreateDirectory(session.SessionPath);
-
-        File.Copy(targetBinaryPath, session.BinaryFilePath, true);
-
-        session.LoadChunks();
-
-        return session;
-    }
-
-    public void Save()
-    {
-        SaveChunks();
-    }
-
-    public void SetChunks(List<Chunk> chunks)
-    {
-        Chunks.Clear();
-        Chunks.AddRange(chunks);
-    }
-
-    private Session(string key)
+    public Session(string key, string sessionsFolderPath)
     {
         Key = key;
-        SessionPath = Path.Combine(ApplicationContext.SessionsFolderPath, key);
+        SessionPath = Path.Combine(sessionsFolderPath, key);
         ChunksPath = Path.Combine(SessionPath, "chunks");
         BinaryFilePath = Path.Combine(SessionPath, key);
     }
 
-    private void SaveChunks()
+    public void Save()
     {
         if (!Directory.Exists(ChunksPath))
             Directory.CreateDirectory(ChunksPath);
@@ -80,9 +44,9 @@ public class Session
         }
     }
 
-    private void LoadChunks()
+    public void Load()
     {
-        Chunks.Clear();
+        var chunks = new List<Chunk>();
 
         if (!Directory.Exists(ChunksPath)) return;
 
@@ -97,7 +61,7 @@ public class Session
 
                 if (chunk != null)
                 {
-                    Chunks.Add(chunk);
+                    chunks.Add(chunk);
                 }
             }
             catch (Exception ex)
@@ -105,5 +69,12 @@ public class Session
                 Console.WriteLine($"Error loading chunk from {chunkFile}: {ex.Message}");
             }
         }
+
+        Chunks = chunks;
+    }
+
+    public void SetChunks(List<Chunk> chunks)
+    {
+        Chunks = chunks;
     }
 }

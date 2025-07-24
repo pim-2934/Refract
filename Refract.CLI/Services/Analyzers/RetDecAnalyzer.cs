@@ -1,18 +1,43 @@
 ﻿using Microsoft.Extensions.Logging;
+using Refract.CLI.Entities;
 
-namespace Refract.CLI.Services;
+namespace Refract.CLI.Services.Analyzers;
 
-public class DecompileService(ILogger<DecompileService> logger) // TODO: refactor into RetDecAnalyzer
+public class RetDecAnalyzer(ILogger<RetDecAnalyzer> logger) : IBinaryAnalyzer
 {
-    public async Task DecompileAsync(Session session, string inputFilePath, string projectPath)
+    public async Task<string> DecompileToCAsync(Session session)
     {
-        var fileInfo = new FileInfo(inputFilePath);
+        if (!File.Exists($"{session.BinaryFilePath}.c"))
+            await DecompileAsync(session);
+
+        return await File.ReadAllTextAsync($"{session.BinaryFilePath}.c");
+    }
+
+    public async Task<string> DisassembleToAsmAsync(Session session)
+    {
+        if (!File.Exists($"{session.BinaryFilePath}.asm"))
+            await DecompileAsync(session);
+
+        return await File.ReadAllTextAsync($"{session.BinaryFilePath}.asm");
+    }
+
+    public async Task<string> DumpHexAsync(Session session)
+    {
+        if (!File.Exists($"{session.BinaryFilePath}.hex"))
+            await DecompileAsync(session);
+
+        return await File.ReadAllTextAsync($"{session.BinaryFilePath}.hex");
+    }
+
+    private async Task DecompileAsync(Session session)
+    {
+        var binaryFilePath = session.BinaryFilePath.Replace("\\", "/");
         using var process = new System.Diagnostics.Process();
         process.StartInfo = new System.Diagnostics.ProcessStartInfo
         {
             FileName = "cmd.exe",
             Arguments =
-                $"/c docker compose run --rm disassembler retdec-decompiler.py --cleanup --mode bin --backend-no-debug --backend-no-debug-comments -o /{projectPath.Replace("\\", "/")}/{fileInfo.Name}.c /{inputFilePath.Replace("\\", "/")}",
+                $"/c docker compose run --rm analyzer retdec-decompiler.py --cleanup --mode bin --backend-no-debug --backend-no-debug-comments -o /{binaryFilePath}.c /{binaryFilePath}",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -21,7 +46,6 @@ public class DecompileService(ILogger<DecompileService> logger) // TODO: refacto
 
         process.Start();
 
-        // Read output asynchronously
         var output = await process.StandardOutput.ReadToEndAsync();
         var error = await process.StandardError.ReadToEndAsync();
 
@@ -40,9 +64,9 @@ public class DecompileService(ILogger<DecompileService> logger) // TODO: refacto
 
     private void SplitDsmFile(Session session)
     {
-        using var reader = new StreamReader(session.DsmFilePath);
-        using var asmWriter = new StreamWriter(session.AsmFilePath);
-        using var hexWriter = new StreamWriter(session.HexFilePath);
+        using var reader = new StreamReader($"{session.BinaryFilePath}.dsm");
+        using var asmWriter = new StreamWriter($"{session.BinaryFilePath}.asm");
+        using var hexWriter = new StreamWriter($"{session.BinaryFilePath}.hex");
 
         var isHex = false;
 
@@ -70,6 +94,8 @@ public class DecompileService(ILogger<DecompileService> logger) // TODO: refacto
             else
                 asmWriter.WriteLine(line);
         }
+
+        // TODO: cleanup the HEX output
 
         hexWriter.Flush();
         hexWriter.Close();

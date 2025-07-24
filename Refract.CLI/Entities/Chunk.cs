@@ -1,4 +1,4 @@
-﻿namespace Refract.CLI;
+﻿namespace Refract.CLI.Entities;
 
 public class Chunk
 {

@@ -1,12 +1,12 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.Options;
 
-namespace Refract.CLI.Services;
+namespace Refract.CLI.Services.Talkers;
 
-public class OllamaService(string ollamaUrl = "http://localhost:11435/api/generate")
+public class OllamaTalker(IOptions<OllamaTalker.Options> options) : ITalker
 {
-    private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromMinutes(10) };
-
+    private readonly HttpClient _httpClient = new() { Timeout = options.Value.Timeout };
 
     public async Task<string> AskAsync(string question, string context)
     {
@@ -32,7 +32,7 @@ public class OllamaService(string ollamaUrl = "http://localhost:11435/api/genera
             repeat_penalty = 1.2
         };
 
-        var response = await _httpClient.PostAsJsonAsync(ollamaUrl, payload);
+        var response = await _httpClient.PostAsJsonAsync($"{options.Value.Host}/api/generate", payload);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -42,5 +42,11 @@ public class OllamaService(string ollamaUrl = "http://localhost:11435/api/genera
 
         var json = await response.Content.ReadFromJsonAsync<JsonElement>();
         return json.GetProperty("response").GetString() ?? "";
+    }
+
+    public class Options
+    {
+        public string Host { get; set; } = "http://localhost:11435";
+        public TimeSpan Timeout { get; set; } = TimeSpan.FromMinutes(10);
     }
 }

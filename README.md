@@ -1,4 +1,4 @@
-# 🧠 Refract
+# Refract
 
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![Reverse Engineering](https://img.shields.io/badge/focus-Reverse%20Engineering-blue)
@@ -27,12 +27,12 @@ docker exec -it embedder ollama create nomic-embed-code -f /root/.ollama/models/
 ```
 Also pull the mistral model for our LLM queries:
 ```
-docker exec -it llm-server ollama pull mistral
+docker exec -it talker ollama pull mistral
 ```
 Verify available models:
 ```
 docker exec -it embedder ollama list
-docker exec -it llm-server ollama list
+docker exec -it talker ollama list
 ```
 
 ### Execution

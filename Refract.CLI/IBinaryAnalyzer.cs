@@ -1,4 +1,6 @@
-﻿namespace Refract.CLI;
+﻿using Refract.CLI.Entities;
+
+namespace Refract.CLI;
 
 public interface IBinaryAnalyzer
 {
