@@ -1,6 +1,5 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
-using Refract.CLI.Data;
 
 namespace Refract.CLI.Chunkers;
 
@@ -41,8 +40,8 @@ public class OverlappingSlidingWindowChunker(int targetTokenEstimate, int overla
             {
                 Id = uid,
                 ContentType = contentType,
-                Context = chunkText,
-                Metadata = new Metadata
+                Content = chunkText,
+                Meta = new Chunk.Metadata
                 {
                     ChunkIndex = i,
                     StartLine = i,

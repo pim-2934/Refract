@@ -25,7 +25,7 @@ public class EmbeddingService(string embedderUrl, ILogger<EmbeddingService> logg
             new
             {
                 model = "nomic-embed-code",
-                prompt = chunk.Context
+                prompt = chunk.Content
             }
         );
 
