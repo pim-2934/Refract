@@ -1,14 +1,15 @@
-﻿using Refract.CLI.Services;
+﻿using Refract.CLI.Entities;
+using Refract.CLI.Services;
 using Terminal.Gui.ViewBase;
 using Terminal.Gui.Views;
 
 namespace Refract.CLI.Views;
 
-public sealed class AskFrameView : FrameView
+public sealed class AskFrameView() : FrameView
 {
     private readonly TextView _askField = new();
 
-    public AskFrameView(RagService ragService, OutputFrameView outputFrameView)
+    public AskFrameView(ApplicationContext context, RagService ragService, OutputFrameView outputFrameView) : this()
     {
         Title = "Ask";
         Width = Dim.Percent(100);
@@ -25,13 +26,12 @@ public sealed class AskFrameView : FrameView
             {
                 args.Handled = true;
 
-                if (ApplicationContext.SessionName is null)
-                    return;
+                if (!context.IsActiveSession) return;
 
                 var query = _askField.Text;
                 _askField.Text = "";
 
-                var response = await ragService.AskAsync(query, ApplicationContext.SessionName);
+                var response = await ragService.AskAsync(context.Session!, query);
 
                 outputFrameView.AppendOutput(response);
             }

@@ -34,7 +34,7 @@ public sealed class MessageDialog : Dialog
             Width = Dim.Fill(),
             Height = Dim.Fill()! - 2,
             ReadOnly = true,
-            AllowsTab = false,
+            AllowsTab = false
         };
 
         Buttons = [btnOk];

@@ -1,6 +1,6 @@
-using Refract.CLI.Data;
+using Microsoft.Extensions.Logging;
+using Refract.CLI.Entities;
 using Refract.CLI.Services;
-using Refract.CLI.Utilities;
 using Terminal.Gui.App;
 using Terminal.Gui.Drawing;
 using Terminal.Gui.Input;
@@ -11,27 +11,29 @@ namespace Refract.CLI.Views;
 
 public sealed class MainView : Toplevel
 {
+    private readonly ApplicationContext _context;
+
     private readonly IChunker _chunker;
-    private readonly DecompileService _decompileService;
-    private readonly EmbeddingService _embeddingService;
-    private readonly VectorDbService _vectorDbService;
+    private readonly IBinaryAnalyzer _binaryAnalyzer;
+    private readonly IEmbedder _embedder;
+    private readonly IIndexer _indexer;
 
     private readonly TileView _tileView = new(2);
     private readonly AnalyzeTabView _analyzeTabView = new();
     private readonly OutputFrameView _outputFrameView = new();
     private readonly StatusBar _statusBar = new();
 
-    public MainView(
-        IChunker chunker,
-        DecompileService decompileService,
-        RagService ragService,
-        EmbeddingService embeddingService,
-        VectorDbService vectorDbService)
+    public MainView(ApplicationContext context, IChunker chunker, IBinaryAnalyzer binaryAnalyzer, IEmbedder embedder,
+        IIndexer indexer,
+        RagService ragService, ILogger<MainView> logger)
     {
+        _context = context;
         _chunker = chunker;
-        _decompileService = decompileService;
-        _embeddingService = embeddingService;
-        _vectorDbService = vectorDbService;
+        _binaryAnalyzer = binaryAnalyzer;
+        _embedder = embedder;
+        _indexer = indexer;
+
+        logger.LogInformation("MainView created");
 
         Width = Dim.Fill();
         Height = Dim.Fill();
@@ -49,7 +51,7 @@ public sealed class MainView : Toplevel
         _tileView.Height = Dim.Percent(99);
 
         _tileView.Tiles.ToList()[0].ContentView!.Add(_outputFrameView);
-        _tileView.Tiles.ToList()[0].ContentView!.Add(new AskFrameView(ragService, _outputFrameView));
+        _tileView.Tiles.ToList()[0].ContentView!.Add(new AskFrameView(context, ragService, _outputFrameView));
         _tileView.Tiles.ToList()[1].ContentView!.Add(_analyzeTabView);
 
         _statusBar.Width = Dim.Fill();
@@ -72,7 +74,7 @@ public sealed class MainView : Toplevel
 
         _statusBar.Add(new Shortcut(Key.F1, "Load binary", ActionLoadBinary));
 
-        if (ApplicationContext.BinaryFilePath is null) return;
+        if (!_context.IsActiveSession) return;
 
         _statusBar.Add(new Shortcut(Key.F2, "Decompile", ActionDecompileBinary));
         _statusBar.Add(new Shortcut(Key.F3, "Generate chunks", ActionGenerateChunks));
@@ -84,20 +86,11 @@ public sealed class MainView : Toplevel
     {
         try
         {
-            if (ApplicationContext.BinaryFilePath is null)
-            {
-                return;
-            }
+            if (!_context.IsActiveSession) return;
 
-            var chunks = _chunker.LoadChunks(ApplicationContext.ChunkFolderPath);
+            await _indexer.ProcessChunksAsync(_context.Session!);
 
-            await _vectorDbService.ProcessChunksAsync(
-                chunks,
-                ApplicationContext.ChunkFolderPath,
-                ApplicationContext.SessionName
-            );
-
-            MessageDialog.Show("Success", "All chunks stored successfully");
+            MessageDialog.Show("Success", "Chunks stored successfully");
         }
         catch (Exception e)
         {
@@ -109,14 +102,10 @@ public sealed class MainView : Toplevel
     {
         try
         {
-            if (ApplicationContext.BinaryFilePath is null)
-            {
-                return;
-            }
+            if (!_context.IsActiveSession) return;
 
-            var chunks = _chunker.LoadChunks(ApplicationContext.ChunkFolderPath);
-            chunks = await _embeddingService.EmbedChunksAsync(chunks);
-            _chunker.SaveChunks(chunks, ApplicationContext.ChunkFolderPath);
+            await _embedder.EmbedChunksAsync(_context.Session!.Chunks);
+            _context.Session.Save();
 
             MessageDialog.Show("Success", "All chunks embedded successfully");
         }
@@ -126,57 +115,39 @@ public sealed class MainView : Toplevel
         }
     }
 
-    private void ActionGenerateChunks()
+    private async void ActionGenerateChunks()
     {
-        if (ApplicationContext.BinaryFilePath is null)
+        try
         {
-            return;
+            if (!_context.IsActiveSession) return;
+
+            var chunks = new List<Chunk>();
+            chunks.AddRange(_chunker.CreateChunks(await _binaryAnalyzer.DecompileToCAsync(_context.Session!), "C"));
+            chunks.AddRange(
+                _chunker.CreateChunks(await _binaryAnalyzer.DisassembleToAsmAsync(_context.Session!), "ASM"));
+            chunks.AddRange(_chunker.CreateChunks(await _binaryAnalyzer.DumpHexAsync(_context.Session!), "HEX"));
+
+            _context.Session!.SetChunks(chunks);
+            _context.Session!.Save();
+
+            MessageDialog.Show("Success",
+                $"Created {_context.Session.Chunks.Count} chunks in {_context.Session.ChunksPath} folder.");
         }
-
-        var chunks = new List<Chunk>();
-        chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.CFilePath), "C"));
-        chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.AsmFilePath), "ASM"));
-        chunks.AddRange(_chunker.CreateChunks(File.ReadAllText(ApplicationContext.HexFilePath), "HEX"));
-
-        _chunker.SaveChunks(chunks, ApplicationContext.ChunkFolderPath);
-
-        MessageDialog.Show("Success", $"Created {chunks.Count} chunks in {ApplicationContext.ChunkFolderPath} folder.");
+        catch (Exception e)
+        {
+            MessageDialog.Show("Exception occured!", e.Message);
+        }
     }
 
     private async void ActionDecompileBinary()
     {
         try
         {
-            if (ApplicationContext.BinaryFilePath is null)
-            {
-                return;
-            }
+            if (!_context.IsActiveSession) return;
 
-            await _decompileService.DecompileAsync(
-                ApplicationContext.BinaryFilePath,
-                ApplicationContext.ProjectFolderPath!
-            );
-
-            _analyzeTabView.SetAsmTabContent(
-                string.Join("\n",
-                    File.Exists(ApplicationContext.AsmFilePath)
-                        ? await File.ReadAllLinesAsync(ApplicationContext.AsmFilePath)
-                        : [])
-            );
-
-            _analyzeTabView.SetCTabContent(
-                string.Join("\n",
-                    File.Exists(ApplicationContext.CFilePath)
-                        ? await File.ReadAllLinesAsync(ApplicationContext.CFilePath)
-                        : [])
-            );
-
-            _analyzeTabView.SetHexTabContent(
-                File.Exists(ApplicationContext.HexFilePath)
-                    ? File.OpenRead(ApplicationContext.HexFilePath)
-                    : new MemoryStream()
-            );
-
+            _analyzeTabView.SetAsmTabContent(await _binaryAnalyzer.DisassembleToAsmAsync(_context.Session!));
+            _analyzeTabView.SetCTabContent(await _binaryAnalyzer.DecompileToCAsync(_context.Session!));
+            _analyzeTabView.SetHexTabContent(await _binaryAnalyzer.DumpHexAsync(_context.Session!));
 
             MessageDialog.Show("Success", "Binary decompiled!");
         }
@@ -207,21 +178,7 @@ public sealed class MainView : Toplevel
                 if (string.IsNullOrEmpty(path))
                     return;
 
-                var fileBytes = await File.ReadAllBytesAsync(path);
-                var crc32 = HashUtilities.CalculateCrc32(fileBytes);
-                ApplicationContext.SessionName = crc32.ToString("X8");
-
-                ApplicationContext.ProjectFolderPath = Path.Combine(
-                    ApplicationContext.SessionsFolderPath,
-                    ApplicationContext.SessionName
-                );
-
-                if (!Directory.Exists(ApplicationContext.ProjectFolderPath))
-                    Directory.CreateDirectory(ApplicationContext.ProjectFolderPath);
-
-                ApplicationContext.BinaryFilePath =
-                    Path.Combine(ApplicationContext.ProjectFolderPath, Path.GetFileName(path));
-                File.Copy(path, ApplicationContext.BinaryFilePath, true);
+                await _context.StartSession(path);
 
                 UpdateShortcuts();
 

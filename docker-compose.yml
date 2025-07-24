@@ -1,13 +1,12 @@
 services:
 
-  disassembler:
+  analyzer:
     image: remnux/retdec
     volumes:
       - ./sessions:/sessions
 
-  vector-db:
+  indexer:
     image: qdrant/qdrant
-    container_name: vector-db
     ports:
       - "6333:6333"
     volumes:
@@ -17,7 +16,6 @@ services:
 
   embedder:
     image: ollama/ollama
-    container_name: embedder
     deploy:
       resources:
         reservations:
@@ -40,9 +38,8 @@ services:
     networks:
       - backend
 
-  llm-server:
+  talker:
     image: ollama/ollama
-    container_name: llm-server
     deploy:
       resources:
         reservations:

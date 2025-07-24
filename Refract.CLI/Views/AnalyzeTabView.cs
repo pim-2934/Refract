@@ -11,7 +11,8 @@ public class AnalyzeTabView : TabView
 
     private readonly TextView _cTextView = new();
     private readonly TextView _asmTextView = new();
-    private readonly HexView _hexView = new();
+    // private readonly HexView _hexView = new(); // TODO: explore HexView
+    private readonly TextView _hexView = new();
 
     public AnalyzeTabView()
     {
@@ -51,8 +52,8 @@ public class AnalyzeTabView : TabView
         _asmTextView.Text = text;
     }
 
-    public void SetHexTabContent(Stream stream)
+    public void SetHexTabContent(string text)
     {
-        _hexView.Source = stream; // TODO: data has to be formatted differently for this view to function
+        _hexView.Text = text;
     }
 }

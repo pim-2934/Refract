@@ -1,58 +1,40 @@
-﻿// TODO: dockerize this app!
-
+﻿using DotNetBuddy.Infrastructure.Extensions;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Refract.CLI;
-using Refract.CLI.Chunkers;
+using Refract.CLI.Entities;
 using Refract.CLI.Services;
+using Refract.CLI.Services.Analyzers;
+using Refract.CLI.Services.Chunkers;
+using Refract.CLI.Services.Embedders;
+using Refract.CLI.Services.Indexers;
+using Refract.CLI.Services.Talkers;
 using Refract.CLI.Views;
-using Serilog;
 using Terminal.Gui.App;
 
-// TODO: this is not the right place
-const string embedderUrl = "http://localhost:11434/api/embeddings";
-const string vectorDbUrl = "http://localhost:6333";
+var serviceCollection = new ServiceCollection();
+serviceCollection.AddSingleton<IChunker, OverlappingSlidingWindowChunker>();
+serviceCollection.AddSingleton<IBinaryAnalyzer, RetDecAnalyzer>();
+serviceCollection.AddSingleton<IEmbedder, OllamaEmbedder>();
+serviceCollection.AddSingleton<IIndexer, QdrantIndexer>();
+serviceCollection.AddSingleton<ITalker, OllamaTalker>();
+serviceCollection.AddSingleton<ApplicationContext>();
+serviceCollection.AddSingleton<RagService>();
+serviceCollection.AddSingleton<MainView>();
+serviceCollection.AddBuddy();
 
-Directory.CreateDirectory("logs");
-Directory.CreateDirectory("sessions");
+// serviceCollection.Configure<OverlappingSlidingWindowChunker.Options>(_ => { });
+// serviceCollection.Configure<OllamaEmbedder.Options>(_ => { });
+// serviceCollection.Configure<QdrantIndexer.Options>(_ => { });
+// serviceCollection.Configure<OllamaTalker.Options>(_ => { });
 
-// Setup Serilog
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Verbose()
-    .Enrich.FromLogContext()
-    .WriteTo.File(
-        path: Path.Combine("logs", $"app-{DateTime.Now:yyyy-MM-dd}.log"),
-        rollingInterval: RollingInterval.Day,
-        outputTemplate: "[{Timestamp:yyyy-MM-dd HH:mm:ss.fff}] [{Level:u3}] {Message:lj}{NewLine}{Exception}",
-        encoding: System.Text.Encoding.UTF8,
-        buffered: false,
-        flushToDiskInterval: TimeSpan.FromSeconds(1),
-        shared: true)
-    .CreateLogger();
-
-var loggerFactory = LoggerFactory.Create(builder =>
-{
-    builder
-        .AddSerilog(Log.Logger, dispose: false)
-        .SetMinimumLevel(LogLevel.Trace);
-});
-
-// Setup Application
-Logging.Logger = loggerFactory.CreateLogger("Global Logger");
+var serviceProvider = serviceCollection.BuildServiceProvider();
+Logging.Logger = serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("Global Logger");
 Application.Init();
 
-// Run application
 try
 {
-    Application.Run(new MainView(
-        new OverlappingSlidingWindowChunker(
-            ApplicationContext.ChunkerTargetTokenEstimate,
-            ApplicationContext.ChunkerOverlapLines
-        ),
-        new DecompileService(loggerFactory.CreateLogger<DecompileService>()),
-        new RagService(vectorDbUrl, embedderUrl, loggerFactory.CreateLogger<RagService>()),
-        new EmbeddingService(embedderUrl, loggerFactory.CreateLogger<EmbeddingService>()),
-        new VectorDbService(vectorDbUrl, loggerFactory.CreateLogger<VectorDbService>())
-    ));
+    Application.Run(serviceProvider.GetService<MainView>()!);
 }
 finally
 {
