@@ -9,7 +9,7 @@
 
     <ItemGroup>
       <PackageReference Include="ClangSharp" Version="20.1.2.1" />
-      <PackageReference Include="DotNetBuddy.Infrastructure" Version="8.0.34" />
+      <PackageReference Include="DotNetBuddy.Infrastructure" Version="8.0.35" />
     <PackageReference Include="libClangSharp.runtime.win-x64" Version="20.1.2" />
     <PackageReference Include="libclang.runtime.win-x64" Version="20.1.2" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.2" />
